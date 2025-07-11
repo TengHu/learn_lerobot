@@ -3,9 +3,9 @@ set -e
 
 # Start SSH service
 if command -v service &> /dev/null; then
-    service ssh start
+    service ssh start || true
 elif command -v systemctl &> /dev/null; then
-    systemctl start ssh
+    systemctl start ssh || true
 else
     /etc/init.d/ssh start || true
 fi
