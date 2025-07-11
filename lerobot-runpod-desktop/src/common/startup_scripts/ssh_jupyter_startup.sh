@@ -20,7 +20,7 @@ else
     JUPYTER_TOKEN="--ServerApp.token=''"
 fi
 
-nohup jupyter lab --allow-root --no-browser --port=8888 --ip=0.0.0.0 $JUPYTER_TOKEN --ServerApp.allow_origin='*' --ServerApp.preferred_dir=/workspace &> /jupyter.log &
+nohup jupyter lab --allow-root --no-browser --port=8888 --ip=0.0.0.0 $JUPYTER_TOKEN --ServerApp.allow_origin='*' --ServerApp.preferred_dir=/workspace &> $HOME/jupyter.log &
 echo "Jupyter Lab started on port 8888."
 
 # Keep script running

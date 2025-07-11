@@ -56,6 +56,12 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1 
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 2 && \
     update-alternatives --set python3 /usr/bin/python3.10
 
+# Install pip for Python 3.10
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.10 get-pip.py
+
+# Install JupyterLab
+RUN python3.10 -m pip install --upgrade pip && python3.10 -m pip install jupyterlab
+
 ### Copy over the maximization script to our startup dir for use by app images.
 COPY ./src/ubuntu/install/maximize_script $STARTUPDIR/
 
@@ -185,6 +191,12 @@ RUN touch $STARTUPDIR/wm.log \
     && chown 1000:root /var/run/pulse \
     && rm -Rf /home/kasm-default-profile/.launchpadlib
 
+# Ensure /run/sshd exists and is accessible
+RUN mkdir -p /run/sshd && chmod 755 /run/sshd
+
+# Ensure /workspace exists and is owned by kasm-user
+RUN mkdir -p /workspace && chown 1000:1000 /workspace
+
 ### Cleanup job
 COPY ./src/ubuntu/install/cleanup $INST_SCRIPTS/cleanup/
 RUN bash $INST_SCRIPTS/cleanup/cleanup.sh && rm -rf $INST_SCRIPTS/cleanup/
@@ -192,7 +204,8 @@ RUN bash $INST_SCRIPTS/cleanup/cleanup.sh && rm -rf $INST_SCRIPTS/cleanup/
 # Copy SSH and Jupyter startup scripts
 COPY src/common/startup_scripts/ssh_jupyter_startup.sh /dockerstartup/ssh_jupyter_startup.sh
 COPY src/common/startup_scripts/custom_startup.sh /dockerstartup/custom_startup.sh
-RUN chmod +x /dockerstartup/ssh_jupyter_startup.sh /dockerstartup/custom_startup.sh
+COPY src/common/startup_scripts/entrypoint_with_ssh.sh /dockerstartup/entrypoint_with_ssh.sh
+RUN chmod +x /dockerstartup/ssh_jupyter_startup.sh /dockerstartup/custom_startup.sh /dockerstartup/entrypoint_with_ssh.sh
 
 #### Runtime Stage ####
 FROM scratch
@@ -257,5 +270,5 @@ EXPOSE $VNC_PORT \
 WORKDIR $HOME
 USER 1000
 
-ENTRYPOINT ["/dockerstartup/kasm_default_profile.sh", "/dockerstartup/vnc_startup.sh", "/dockerstartup/kasm_startup.sh"]
+ENTRYPOINT ["/dockerstartup/entrypoint_with_ssh.sh", "/dockerstartup/kasm_default_profile.sh", "/dockerstartup/vnc_startup.sh", "/dockerstartup/kasm_startup.sh"]
 CMD ["--wait"]
