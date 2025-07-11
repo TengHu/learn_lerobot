@@ -187,6 +187,11 @@ RUN touch $STARTUPDIR/wm.log \
 COPY ./src/ubuntu/install/cleanup $INST_SCRIPTS/cleanup/
 RUN bash $INST_SCRIPTS/cleanup/cleanup.sh && rm -rf $INST_SCRIPTS/cleanup/
 
+# Copy SSH and Jupyter startup scripts
+COPY src/common/startup_scripts/ssh_jupyter_startup.sh /dockerstartup/ssh_jupyter_startup.sh
+COPY src/common/startup_scripts/custom_startup.sh /dockerstartup/custom_startup.sh
+RUN chmod +x /dockerstartup/ssh_jupyter_startup.sh /dockerstartup/custom_startup.sh
+
 #### Runtime Stage ####
 FROM scratch
 COPY --from=base_layer / /
