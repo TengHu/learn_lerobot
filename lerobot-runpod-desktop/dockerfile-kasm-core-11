@@ -249,7 +249,9 @@ ENV AUDIO_PORT=4901 \
 EXPOSE $VNC_PORT \
        $NO_VNC_PORT \
        $UPLOAD_PORT \
-       $AUDIO_PORT
+       $AUDIO_PORT \
+       22/tcp \
+       8888/tcp
 WORKDIR $HOME
 USER 1000
 
