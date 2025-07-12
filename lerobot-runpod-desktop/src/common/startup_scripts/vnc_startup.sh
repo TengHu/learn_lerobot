@@ -110,7 +110,9 @@ function profile_size_check(){
 
 ## correct forwarding of shutdown signal
 function cleanup () {
-    kill -s SIGTERM $!
+    if kill -0 $! 2>/dev/null; then
+        kill -s SIGTERM $! 2>/dev/null || true
+    fi
     exit 0
 }
 
@@ -445,7 +447,7 @@ do
 				custom_startup)
 					echo "The custom startup script exited."
 					# custom startup scripts track the target process on their own, they should not exit
-					custom_startup
+					# custom_startup
 					;;
 				*)
 					echo "Unknown Service: $process"

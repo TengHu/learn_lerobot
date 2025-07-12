@@ -59,6 +59,10 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1 
 # Install pip for Python 3.10
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.10 get-pip.py
 
+
+# Install gosu for user switching in entrypoint
+RUN apt-get update && apt-get install -y gosu
+
 # Install JupyterLab
 RUN python3.10 -m pip install --upgrade pip && python3.10 -m pip install jupyterlab
 
@@ -202,10 +206,9 @@ COPY ./src/ubuntu/install/cleanup $INST_SCRIPTS/cleanup/
 RUN bash $INST_SCRIPTS/cleanup/cleanup.sh && rm -rf $INST_SCRIPTS/cleanup/
 
 # Copy SSH and Jupyter startup scripts
-COPY src/common/startup_scripts/ssh_jupyter_startup.sh /dockerstartup/ssh_jupyter_startup.sh
+COPY src/common/startup_scripts/user_startup.sh /dockerstartup/user_startup.sh
 COPY src/common/startup_scripts/custom_startup.sh /dockerstartup/custom_startup.sh
-COPY src/common/startup_scripts/entrypoint_with_ssh.sh /dockerstartup/entrypoint_with_ssh.sh
-RUN chmod +x /dockerstartup/ssh_jupyter_startup.sh /dockerstartup/custom_startup.sh /dockerstartup/entrypoint_with_ssh.sh
+RUN chmod +x /dockerstartup/user_startup.sh /dockerstartup/custom_startup.sh 
 
 #### Runtime Stage ####
 FROM scratch
@@ -268,7 +271,11 @@ EXPOSE $VNC_PORT \
        22/tcp \
        8888/tcp
 WORKDIR $HOME
+
+
 USER 1000
 
-ENTRYPOINT ["/dockerstartup/entrypoint_with_ssh.sh", "/dockerstartup/kasm_default_profile.sh", "/dockerstartup/vnc_startup.sh", "/dockerstartup/kasm_startup.sh"]
+ENTRYPOINT ["/dockerstartup/kasm_default_profile.sh", "/dockerstartup/vnc_startup.sh", "/dockerstartup/kasm_startup.sh"]
+
+
 CMD ["--wait"]
