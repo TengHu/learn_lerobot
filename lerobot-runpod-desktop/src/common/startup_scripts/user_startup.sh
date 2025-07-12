@@ -2,6 +2,28 @@
 set -e
 
 start_ssh() {
+    # Add public key to authorized_keys if provided
+    if [[ -n "$PUBLIC_KEY" ]]; then
+        # For root
+        mkdir -p /root/.ssh
+        chmod 700 /root/.ssh
+        echo "$PUBLIC_KEY" >> /root/.ssh/authorized_keys
+        chmod 600 /root/.ssh/authorized_keys
+
+        # For kasm-user
+        mkdir -p /home/kasm-user/.ssh
+        chmod 700 /home/kasm-user/.ssh
+        echo "$PUBLIC_KEY" >> /home/kasm-user/.ssh/authorized_keys
+        chmod 600 /home/kasm-user/.ssh/authorized_keys
+        chown -R kasm-user:kasm-user /home/kasm-user/.ssh
+
+        echo "Public key added to root and kasm-user authorized_keys."
+    else
+        echo "No PUBLIC_KEY provided, skipping SSH key setup."
+    fi
+
+
+    
     # Start SSH service
     if command -v service &> /dev/null; then
         service ssh start || true

@@ -309,7 +309,7 @@ function custom_startup (){
 		fi
 
 		"$custom_startup_script" &
-		KASM_PROCS['custom_startup']=$!
+		# KASM_PROCS['custom_startup']=$!
 	fi
 }
 
