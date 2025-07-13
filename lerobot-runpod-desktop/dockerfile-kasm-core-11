@@ -41,8 +41,13 @@ RUN bash $INST_SCRIPTS/tools/install_tools.sh && rm -rf $INST_SCRIPTS/tools/
 # Install sudo and add kasm-user as a sudoer
 RUN apt-get update && apt-get install -y sudo && \
     echo "kasm-user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    
+
+
+
 # Install OpenSSH server for SSH service support
 RUN apt-get update && apt-get install -y openssh-server
+RUN apt-get update && apt-get install -y speech-dispatcher
 
 ### Install prerequisites, add the PPA, and install Python 3.10
 RUN apt-get update && \
@@ -162,7 +167,8 @@ RUN bash $INST_SCRIPTS/emblems/install_emblems.sh && rm -rf $INST_SCRIPTS/emblem
 ### Create user and home directory for base images that don't already define it
 RUN (groupadd -g 1000 kasm-user \
     && useradd -l -M -u 1000 -g 1000 kasm-user \
-    && usermod -a -G kasm-user kasm-user) ; exit 0
+    && usermod -a -G kasm-user kasm-user \
+    && passwd -d kasm-user) ; exit 0
 ENV HOME=/home/kasm-user
 WORKDIR $HOME
 RUN mkdir -p $HOME && chown -R 1000:0 $HOME
@@ -271,6 +277,10 @@ EXPOSE $VNC_PORT \
        22/tcp \
        8888/tcp
 WORKDIR $HOME
+
+# Allow empty passwords for SSH
+RUN sed -i 's/^#PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_config || \
+    echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config
 
 
 USER 1000
