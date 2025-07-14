@@ -41,6 +41,13 @@ RUN bash $INST_SCRIPTS/tools/install_tools.sh && rm -rf $INST_SCRIPTS/tools/
 # Install sudo and add kasm-user as a sudoer
 RUN apt-get update && apt-get install -y sudo && \
     echo "kasm-user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    
+
+
+
+# Install OpenSSH server for SSH service support
+RUN apt-get update && apt-get install -y openssh-server
+RUN apt-get update && apt-get install -y speech-dispatcher
 
 ### Install prerequisites, add the PPA, and install Python 3.10
 RUN apt-get update && \
@@ -53,6 +60,16 @@ RUN apt-get update && \
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1 && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 2 && \
     update-alternatives --set python3 /usr/bin/python3.10
+
+# Install pip for Python 3.10
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.10 get-pip.py
+
+
+# Install gosu for user switching in entrypoint
+RUN apt-get update && apt-get install -y gosu
+
+# Install JupyterLab
+RUN python3.10 -m pip install --upgrade pip && python3.10 -m pip install jupyterlab
 
 ### Copy over the maximization script to our startup dir for use by app images.
 COPY ./src/ubuntu/install/maximize_script $STARTUPDIR/
@@ -149,8 +166,9 @@ RUN bash $INST_SCRIPTS/emblems/install_emblems.sh && rm -rf $INST_SCRIPTS/emblem
 
 ### Create user and home directory for base images that don't already define it
 RUN (groupadd -g 1000 kasm-user \
-    && useradd -M -u 1000 -g 1000 kasm-user \
-    && usermod -a -G kasm-user kasm-user) ; exit 0
+    && useradd -l -M -u 1000 -g 1000 kasm-user \
+    && usermod -a -G kasm-user kasm-user \
+    && passwd -d kasm-user) ; exit 0
 ENV HOME=/home/kasm-user
 WORKDIR $HOME
 RUN mkdir -p $HOME && chown -R 1000:0 $HOME
@@ -183,9 +201,20 @@ RUN touch $STARTUPDIR/wm.log \
     && chown 1000:root /var/run/pulse \
     && rm -Rf /home/kasm-default-profile/.launchpadlib
 
+# Ensure /run/sshd exists and is accessible
+RUN mkdir -p /run/sshd && chmod 755 /run/sshd
+
+# Ensure /workspace exists and is owned by kasm-user
+RUN mkdir -p /workspace && chown 1000:1000 /workspace
+
 ### Cleanup job
 COPY ./src/ubuntu/install/cleanup $INST_SCRIPTS/cleanup/
 RUN bash $INST_SCRIPTS/cleanup/cleanup.sh && rm -rf $INST_SCRIPTS/cleanup/
+
+# Copy SSH and Jupyter startup scripts
+COPY src/common/startup_scripts/user_startup.sh /dockerstartup/user_startup.sh
+COPY src/common/startup_scripts/custom_startup.sh /dockerstartup/custom_startup.sh
+RUN chmod +x /dockerstartup/user_startup.sh /dockerstartup/custom_startup.sh 
 
 #### Runtime Stage ####
 FROM scratch
@@ -244,9 +273,19 @@ ENV AUDIO_PORT=4901 \
 EXPOSE $VNC_PORT \
        $NO_VNC_PORT \
        $UPLOAD_PORT \
-       $AUDIO_PORT
+       $AUDIO_PORT \
+       22/tcp \
+       8888/tcp
 WORKDIR $HOME
+
+# Allow empty passwords for SSH
+RUN sed -i 's/^#PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_config || \
+    echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config
+
+
 USER 1000
 
 ENTRYPOINT ["/dockerstartup/kasm_default_profile.sh", "/dockerstartup/vnc_startup.sh", "/dockerstartup/kasm_startup.sh"]
+
+
 CMD ["--wait"]

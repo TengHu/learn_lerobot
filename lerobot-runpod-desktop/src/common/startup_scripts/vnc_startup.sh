@@ -110,7 +110,9 @@ function profile_size_check(){
 
 ## correct forwarding of shutdown signal
 function cleanup () {
-    kill -s SIGTERM $!
+    if kill -0 $! 2>/dev/null; then
+        kill -s SIGTERM $! 2>/dev/null || true
+    fi
     exit 0
 }
 
@@ -307,7 +309,7 @@ function custom_startup (){
 		fi
 
 		"$custom_startup_script" &
-		KASM_PROCS['custom_startup']=$!
+		# KASM_PROCS['custom_startup']=$!
 	fi
 }
 
@@ -442,10 +444,10 @@ do
 					# TODO: Needs work in python project to support auto restart
 					start_printer
 					;;
-				custom_script)
+				custom_startup)
 					echo "The custom startup script exited."
 					# custom startup scripts track the target process on their own, they should not exit
-					custom_startup
+					# custom_startup
 					;;
 				*)
 					echo "Unknown Service: $process"

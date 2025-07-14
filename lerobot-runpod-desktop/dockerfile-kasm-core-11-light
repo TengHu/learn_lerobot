@@ -1,0 +1,33 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    HOME=/home/kasm-user
+
+# Install OpenSSH server and sudo
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssh-server sudo && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create kasm-user and set up home directory
+RUN useradd -m -u 1000 -s /bin/bash kasm-user && \
+    echo "kasm-user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    passwd -d kasm-user
+
+# Ensure /run/sshd exists
+RUN mkdir -p /run/sshd
+
+# Copy your custom_start script into the image
+COPY src/common/startup_scripts/custom_startup.sh /dockerstartup/custom_startup.sh
+COPY src/common/startup_scripts/user_startup.sh /dockerstartup/user_startup.sh
+RUN chmod +x /dockerstartup/custom_startup.sh
+RUN chmod +x /dockerstartup/user_startup.sh
+
+WORKDIR /home/kasm-user
+
+RUN sed -i 's/^#PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_config || \
+    echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config
+
+USER 1000
+ENTRYPOINT ["/dockerstartup/custom_startup.sh"] 
+
+

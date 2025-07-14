@@ -29,6 +29,43 @@ The container is now accessible via a browser : `https://<IP>:6901`
    docker push nielhu/lerobot:cuda11
    ```
 
+## 🚀 Docker Build & Push Optimization Tips
+
+To speed up your builds and pushes:
+
+1. **Use a .dockerignore file** to avoid sending unnecessary files to the Docker daemon. Example:
+   ```
+   .git
+   *.md
+   *.log
+   __pycache__/
+   *.pyc
+   node_modules/
+   build/
+   dist/
+   .DS_Store
+   .env
+   ```
+2. **Enable BuildKit** for faster, more efficient builds:
+   ```sh
+   export DOCKER_BUILDKIT=1
+   ```
+3. **Use buildx with caching** for even faster builds:
+   ```sh
+   docker buildx build \
+     --build-arg START_XFCE4=1 \
+     --build-arg START_PULSEAUDIO=1 \
+     --file dockerfile-kasm-core-11 \
+     --tag nielhu/lerobot:cuda11 \
+     --cache-from=type=registry,ref=nielhu/lerobot:buildcache \
+     --cache-to=type=registry,ref=nielhu/lerobot:buildcache,mode=max \
+     --push \
+     .
+   ```
+4. **Combine RUN commands and clean up after installs** in your Dockerfile to reduce image size and speed up builds.
+5. **Use --no-install-recommends** with apt-get to avoid unnecessary packages.
+6. **Push to a geographically close registry** for faster uploads.
+
 # Kasmweb VNC - Ubuntu Remote Desktop CUDA 11.8
 
 ## KasmVNC - Linux Web Remote Desktop
@@ -53,3 +90,5 @@ As we run it on runpod.io you get GPU acceleration access that allows you to run
 
 - Dark Reader extension might cause web ui to not load
 - There is no audio support
+
+  RUN apt-get clean && rm -rf /var/lib/apt/lists/*
