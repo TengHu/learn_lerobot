@@ -14,6 +14,11 @@ The container is now accessible via a browser : `https://<IP>:6901`
  - **Password**: `password`
 
 
+### SSH over exposed TCP
+
+ssh kasm-user@IP_ADDRESS -p PORT -i ~/.ssh/id_ed25519
+
+
 ### How to build and push to Docker Hub (nielhu/lerobot)
 
 1. Build the Docker image:
